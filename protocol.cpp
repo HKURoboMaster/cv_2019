@@ -27,18 +27,16 @@ using namespace std;
 namespace protocol
 {
 
-int baudrate, stop_bits, data_bits, serial_fd;
-fd_set serial_fd_set;
-termios new_termios, old_termios;
-char parity_bits;
+int serial_fd;
 
 bool Connect(const char *serial_device)
 {
-    baudrate = 921600;
-    stop_bits = 1;
-    data_bits = 8;
-    serial_fd = -1;
-    parity_bits = 'N';
+    int baudrate = 921600;
+    int stop_bits = 1;
+    int data_bits = 8;
+    char parity_bits = 'N';
+    termios new_termios, old_termios;
+    fd_set serial_fd_set;
 
 #ifdef __arm__
     serial_fd = open(serial_device, O_RDWR | O_NONBLOCK);
@@ -187,13 +185,13 @@ struct header
 };
 #pragma pack(pop)
 
-const uint16_t cmd_id = 0x00a1u;
-static header header_data;
-static gimbal_ctrl gimbal_ctrl_data;
-uint8_t buffer[100];
-
 void Send(const float yaw, const float pitch)
 {
+    const uint16_t cmd_id = 0x00a1u;
+    static header header_data;
+    static gimbal_ctrl gimbal_ctrl_data;
+    static uint8_t buffer[100];
+
     ++gimbal_ctrl_data.time;
     gimbal_ctrl_data.yaw_ref = yaw;
     gimbal_ctrl_data.pit_ref = pitch;
