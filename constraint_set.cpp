@@ -501,16 +501,18 @@ void DrawRotatedRect(const cv::Mat &img, const cv::RotatedRect &rect, const cv::
 {
     cv::Point2f vertex[4];
 
-    cv::Point2f center = rect.center;
+    /*cv::Point2f center = rect.center;
     float angle = rect.angle;
     std::ostringstream ss;
     ss << angle;
     std::string text(ss.str());
     int font_face = cv::FONT_HERSHEY_COMPLEX;
     double font_scale = 0.5;
-    cv::putText(img, text, center, font_face, font_scale, cv::Scalar(0, 255, 255), thickness, 8, 0);
+    cv::putText(img, text, center, font_face, font_scale, cv::Scalar(0, 255, 255), thickness, 8, 0);*/
 
     rect.points(vertex);
+    cv::line(img, vertex[0], vertex[2], color, thickness);
+    cv::line(img, vertex[1], vertex[3], color, thickness);
     for (int i = 0; i < 4; i++)
         cv::line(img, vertex[i], vertex[(i + 1) % 4], color, thickness);
 }
