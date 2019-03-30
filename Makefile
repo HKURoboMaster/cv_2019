@@ -13,9 +13,9 @@ constraint_set.o: constraint_set.cpp
 main.o: main.cpp
 	g++ $(FLG) -std=c++11 -c main.cpp `pkg-config --cflags opencv`
 
-main.cpp: constraint_set.h common.h
+main.cpp: constraint_set.h
 
-constraint_set.cpp: constraint_set.h common.h
+constraint_set.cpp: constraint_set.h
 
 .PHONY: clean
 clean:

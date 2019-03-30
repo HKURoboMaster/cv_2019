@@ -1,5 +1,4 @@
 /****************************************************************************
- *  Copyright (C) 2019 RoboMaster
  *  Copyright (C) 2019 Brett Dong
  *
  *  This program is free software: you can redistribute it and/or modify

@@ -21,7 +21,6 @@
 #include <Eigen/Core>
 #include <opencv2/core/eigen.hpp>
 #include "constraint_set.h"
-#include "common.h"
 
 namespace constraint_set
 {
@@ -526,16 +525,11 @@ bool DetectArmor(cv::Mat &img, cv::Point3f &target)
     FilterLights(lights);
     PossibleArmors(lights, armors);
     FilterArmors(armors);
-    char buf[100];
-    sprintf(buf, "INPUT: CAMERA %dx%d", img.cols, img.rows);
-    write(img, buf, cv::Point(10, 40));
     if(armors.empty())
         return false;
     ArmorInfo final_armor = SelectFinalArmor(armors);
     DrawRotatedRect(img, final_armor.rect, cv::Scalar(0, 255, 0), 2);
     CalcControlInfo(final_armor, target);
-    sprintf(buf, "Detected @(% 6.2f, % 6.2f, % 6.2f)", target.x, target.y, target.z);
-    write(img, buf, cv::Point(10, 60));
     return true;
 }
 

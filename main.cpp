@@ -1,5 +1,4 @@
 /****************************************************************************
- *  Copyright (C) 2019 RoboMaster
  *  Copyright (C) 2019 Brett Dong
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -20,7 +19,6 @@
 #include <cstring>
 #include <cstdio>
 #include "constraint_set.h"
-#include "common.h"
 using namespace std;
 using namespace cv;
 
@@ -46,9 +44,22 @@ int main()
         cerr << "Failed to open camera" << endl;
         return 1;
     }
+    char buf[100];
     while(cap.read(img))
     {
-        constraint_set::DetectArmor(img, target);
+        if(constraint_set::DetectArmor(img, target))
+        {
+            sprintf(buf, "Detected @(% 6.2f, % 6.2f, % 6.2f)", target.x, target.y, target.z);
+            write(img, buf, cv::Point(10, 60));
+            float yaw = atan2(target.x, target.z), pitch = atan2(target.y, sqrt(target.x*target.x + target.z*target.z));
+            yaw = yaw / M_PI * 180; pitch = pitch / M_PI * 180;
+            sprintf(buf, "YAW=% 4.2fDEG PITCH=% 4.2fDEG", yaw, pitch);
+            write(img, buf, cv::Point(10, 80));
+        }
+        sprintf(buf, "INPUT: CAMERA %dx%d", img.cols, img.rows);
+        write(img, buf, cv::Point(10, 40));
+        line(img, Point(img.cols/2 - 10, img.rows/2), Point(img.cols/2 + 10, img.rows/2), Scalar(255, 0, 0));
+        line(img, Point(img.cols/2, img.rows/2 - 10), Point(img.cols/2, img.rows/2 + 10), Scalar(255, 0, 0));
         imshow("constraint_set", img);
         if(waitKey(1) == 27) break;
     }
