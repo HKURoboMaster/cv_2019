@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     float distortion_coeffs[] = { 0.44686f, 15.5414f, -0.009048f, -0.009717f, -439.74f };
     constraint_set::InitializeConstraintSet(intrinsic_matrix, distortion_coeffs);
     Point3f target;
-    if(!cap.open(0))
+    if(!cap.open(0) || !cap.read(img))
     {
         cerr << "Unable to open camera" << endl;
         return 1;
@@ -83,6 +83,8 @@ int main(int argc, char *argv[])
     bool running = true;
     float angle_amp = 1.0f;
     signal(SIGINT, sig_handler);
+    cout << "INPUT:  CAMERA " << img.cols << "x" << img.rows << endl;
+    cout << "OUTPUT: " << serial_device << endl;
     while(running)
     {
         auto Tstart = chrono::system_clock::now();
@@ -96,11 +98,11 @@ int main(int argc, char *argv[])
             if(verbose > 0)
             {
                 sprintf(buf, "Detected @(% 6.2f, % 6.2f, % 6.2f)", target.x, target.y, target.z);
-                write(img, buf, cv::Point(10, 80));
+                write(img, buf, cv::Point(10, 40));
                 sprintf(buf, "YAW=% 4.2fDEG PITCH=% 4.2fDEG", yaw, pitch);
-                write(img, buf, cv::Point(10, 100));
+                write(img, buf, cv::Point(10, 60));
                 sprintf(buf, "AMP%fx YAW= % 4.2fDEG PITCH=% 4.2fDEG", angle_amp, yaw * angle_amp, pitch * angle_amp);
-                write(img, buf, cv::Point(10, 120));
+                write(img, buf, cv::Point(10, 80));
             }
         }
         if(verbose > 0)
@@ -108,12 +110,8 @@ int main(int argc, char *argv[])
             auto Tend = chrono::system_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(Tend - Tstart);
             const float latency = static_cast<float>(duration.count());// * chrono::milliseconds::period::num / chrono::milliseconds::period::den;
-            sprintf(buf, "INPUT: CAMERA %dx%d", img.cols, img.rows);
-            write(img, buf, cv::Point(5, 20));
-            sprintf(buf, "OUTPUT: %s", serial_device.c_str());
-            write(img, buf, cv::Point(5, 40));
             sprintf(buf, "LATENCY: % 4.2f MS | %d FPS", latency, static_cast<int>(1000.0f / latency));
-            write(img, buf, cv::Point(5, 60));
+            write(img, buf, cv::Point(5, 20));
             line(img, Point(img.cols/2 - 10, img.rows/2), Point(img.cols/2 + 10, img.rows/2), Scalar(255, 0, 0));
             line(img, Point(img.cols/2, img.rows/2 - 10), Point(img.cols/2, img.rows/2 + 10), Scalar(255, 0, 0));
             imshow("constraint_set", img);
