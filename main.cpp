@@ -45,8 +45,7 @@ void write(cv::Mat &img, const char *str, const cv::Point &pt)
 int main(int argc, char *argv[])
 {
     int verbose = 0;
-    const char *default_serial_device = "/dev/ttyUSB0";
-    string serial_device(default_serial_device);
+    string serial_device("/dev/ttyUSB0");
     if(argc > 1)
     {
         for(int i = 1; i < argc; i++)
@@ -58,6 +57,19 @@ int main(int argc, char *argv[])
             else if(strcmp(argv[i], "--serial") == 0 && i+1 < argc)
             {
                 serial_device = argv[++i];
+            }
+            else if(strcmp(argv[i], "--help") == 0)
+            {
+                cout << "Available parameters: " << endl;
+                cout << "  --verbose <verbose_level>" << endl;
+                cout << "  Specify verbose level" << endl;
+                cout << "    0 (default) - Only output I/O information on successful start-up" << endl;
+                cout << "    1 - Show real-time recognition and transmission performance on a window" << endl;
+                cout << endl;
+                cout << "  --serial <serial_device>" << endl;
+                cout << "  Specify serial device for control signal transmission" << endl;
+                cout << "    /dev/ttyUSB0 (default)" << endl;
+                return 0;
             }
         }
     }
