@@ -28,11 +28,8 @@ using namespace cv;
 
 void sig_handler(int sig)
 {
-    if(sig == SIGINT)
-    {
-        protocol::Disconnect();
-        exit(0);
-    }
+    protocol::Disconnect();
+    exit(0);
 }
 
 void write(cv::Mat &img, const char *str, const cv::Point &pt)
@@ -95,6 +92,7 @@ int main(int argc, char *argv[])
     bool running = true;
     float angle_amp = 1.0f;
     signal(SIGINT, sig_handler);
+    signal(SIGKILL, sig_handler);
     cout << "INPUT:  CAMERA " << img.cols << "x" << img.rows << endl;
     cout << "OUTPUT: " << serial_device << endl;
     while(running)
