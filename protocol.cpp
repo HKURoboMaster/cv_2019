@@ -164,7 +164,7 @@ struct gimbal_ctrl
     gimbal_ctrl()
     {
         time = 0;
-        ctrl_mode = 8;
+        ctrl_mode = 7;
         pit_ref = yaw_ref = tgt_dist = x = y = z = 0.0f;
         visual_valid = 0;
     }

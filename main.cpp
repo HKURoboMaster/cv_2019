@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
             break;
         if(constraint_set::DetectArmor(img, target))
         {
-            float yaw = atan2(target.x, target.z), pitch = atan2(target.y, sqrt(target.x*target.x + target.z*target.z));
+            float yaw = -atan2(target.x, target.z), pitch = -atan2(target.y, sqrt(target.x*target.x + target.z*target.z));
             yaw = yaw / M_PI * 180; pitch = pitch / M_PI * 180;
             protocol::Send(yaw * angle_amp, pitch * angle_amp);
             if(verbose > 0)
@@ -131,12 +131,11 @@ int main(int argc, char *argv[])
                     running = false;
                     break;
                 case 'a':
-                    if(angle_amp > 0.5f)
-                        angle_amp -= 0.5f;
+                    if(angle_amp > 0.01f)
+                        angle_amp -= 0.01f;
                     break;
                 case 'd':
-                    if(angle_amp < 9.5f)
-                        angle_amp += 0.5f;
+                    angle_amp += 0.01f;
                     break;
             }
         }
