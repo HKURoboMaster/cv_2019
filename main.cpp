@@ -25,6 +25,7 @@
 #include "protocol.h"
 using namespace std;
 using namespace cv;
+int verbose = 0;
 
 void sig_handler(int sig)
 {
@@ -41,7 +42,6 @@ void write(cv::Mat &img, const char *str, const cv::Point &pt)
 
 int main(int argc, char *argv[])
 {
-    int verbose = 0;
     string serial_device("/dev/ttyUSB0");
     if(argc > 1)
     {

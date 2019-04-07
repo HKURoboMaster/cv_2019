@@ -21,6 +21,7 @@
 #include <Eigen/Core>
 #include <opencv2/core/eigen.hpp>
 #include "constraint_set.h"
+extern int verbose;
 
 namespace constraint_set
 {
@@ -118,6 +119,26 @@ enum ENEMY_COLOR
     RED = 1
 };
 
+void DrawRotatedRect(const cv::Mat &img, const cv::RotatedRect &rect, const cv::Scalar &color, int thickness)
+{
+    cv::Point2f vertex[4];
+
+    /*cv::Point2f center = rect.center;
+    float angle = rect.angle;
+    std::ostringstream ss;
+    ss << angle;
+    std::string text(ss.str());
+    int font_face = cv::FONT_HERSHEY_COMPLEX;
+    double font_scale = 0.5;
+    cv::putText(img, text, center, font_face, font_scale, cv::Scalar(0, 255, 255), thickness, 8, 0);*/
+
+    rect.points(vertex);
+    cv::line(img, vertex[0], vertex[2], color, thickness);
+    cv::line(img, vertex[1], vertex[3], color, thickness);
+    for (int i = 0; i < 4; i++)
+        cv::line(img, vertex[i], vertex[(i + 1) % 4], color, thickness);
+}
+
 cv::Mat DistillationColor(const cv::Mat &src_img, unsigned int color, bool using_hsv)
 {
     if(using_hsv)
@@ -181,7 +202,7 @@ std::vector<std::vector<cv::Point>> FindContours(const cv::Mat &binary_img)
 int filter_x_count_ = 0, filter_y_count_ = 0, filter_z_count_ = 0;
 int filter_distance_count_ = 0, filter_pitch_count_ = 0, filter_yaw_count_ = 0;
 ENEMY_COLOR enemy_color_ = BLUE;
-bool using_hsv_ = false;
+bool using_hsv_ = true;
 const float armor_width = 120.0f, armor_height = 60.0f;
 const float light_max_aspect_ratio_ = 20.0f;
 const float light_min_area_ = 1.0f;
@@ -198,6 +219,7 @@ const float blue_thread_ = 90.0f;
 const float red_thread_ = 50.0f;
 cv::Mat intrinsic_matrix_, distortion_coeffs_;
 cv::Mat gray_img_;
+cv::Mat light_img, filter_light_img;
 std::vector<cv::Point3f> armor_points_;
 
 void SolveArmorCoordinate(const float width,
@@ -237,9 +259,14 @@ void FilterLights(std::vector<cv::RotatedRect> &lights)
                 light.size.area() >= light_min_area_)   //angle < light_max_angle_ &&
         {
             rects.push_back(light);
+            DrawRotatedRect(filter_light_img, light, cv::Scalar(0, 255, 0), 2);
         }
     }
     lights = rects;
+    if(verbose > 1)
+    {
+        cv::imshow("Filter Lights", filter_light_img);
+    }
 }
 
 void CalcArmorInfo(std::vector<cv::Point2f> &armor_points,
@@ -491,34 +518,21 @@ void DetectLights(const cv::Mat &src, std::vector<cv::RotatedRect> &lights)
                 LightInfo light_info(vertices_point);
                 single_light.angle = light_info.angle_;
                 lights.push_back(single_light);
+                DrawRotatedRect(light_img, single_light, cv::Scalar(0, 255, 0), 2);
                 break;
             }
         }
     }
-}
-
-void DrawRotatedRect(const cv::Mat &img, const cv::RotatedRect &rect, const cv::Scalar &color, int thickness)
-{
-    cv::Point2f vertex[4];
-
-    /*cv::Point2f center = rect.center;
-    float angle = rect.angle;
-    std::ostringstream ss;
-    ss << angle;
-    std::string text(ss.str());
-    int font_face = cv::FONT_HERSHEY_COMPLEX;
-    double font_scale = 0.5;
-    cv::putText(img, text, center, font_face, font_scale, cv::Scalar(0, 255, 255), thickness, 8, 0);*/
-
-    rect.points(vertex);
-    cv::line(img, vertex[0], vertex[2], color, thickness);
-    cv::line(img, vertex[1], vertex[3], color, thickness);
-    for (int i = 0; i < 4; i++)
-        cv::line(img, vertex[i], vertex[(i + 1) % 4], color, thickness);
+    if(verbose > 1)
+    {
+        cv::imshow("Detect Lights", light_img);
+    }
 }
 
 bool DetectArmor(cv::Mat &img, cv::Point3f &target)
 {
+    light_img = img.clone();
+    filter_light_img = img.clone();
     std::vector<cv::RotatedRect> lights;
     std::vector<ArmorInfo> armors;
 
