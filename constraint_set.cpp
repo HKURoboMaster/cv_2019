@@ -144,7 +144,7 @@ cv::Mat DistillationColor(const cv::Mat &src_img, unsigned int color, bool using
     if(using_hsv)
     {
         cv::Mat img_hsv;
-        cv::cvtColor(src_img, img_hsv, CV_BGR2HSV);
+        cv::cvtColor(src_img, img_hsv, cv::COLOR_BGR2HSV);
         if (color == 0)
         {
             cv::Mat img_hsv_blue, img_threshold_blue;
@@ -193,8 +193,8 @@ cv::Mat DistillationColor(const cv::Mat &src_img, unsigned int color, bool using
 std::vector<std::vector<cv::Point>> FindContours(const cv::Mat &binary_img)
 {
     std::vector<std::vector<cv::Point>> contours;
-    const auto mode = CV_RETR_EXTERNAL;
-    const auto method = CV_CHAIN_APPROX_SIMPLE;
+    const auto mode = cv::RETR_EXTERNAL;
+    const auto method = cv::CHAIN_APPROX_SIMPLE;
     cv::findContours(binary_img, contours, mode, method);
     return contours;
 }
@@ -485,18 +485,18 @@ void DetectLights(const cv::Mat &src, std::vector<cv::RotatedRect> &lights)
     if(using_hsv_)
     {
         binary_color_img = DistillationColor(src, enemy_color_, using_hsv_);
-        cv::threshold(gray_img_, binary_brightness_img, color_thread_, 255, CV_THRESH_BINARY);
+        cv::threshold(gray_img_, binary_brightness_img, color_thread_, 255, cv::THRESH_BINARY);
     }
     else
     {
         auto light = DistillationColor(src, enemy_color_, using_hsv_);
-        cv::threshold(gray_img_, binary_brightness_img, color_thread_, 255, CV_THRESH_BINARY);
+        cv::threshold(gray_img_, binary_brightness_img, color_thread_, 255, cv::THRESH_BINARY);
         float thresh;
         if (enemy_color_ == BLUE)
             thresh = blue_thread_;
         else
             thresh = red_thread_;
-        cv::threshold(light, binary_color_img, thresh, 255, CV_THRESH_BINARY);
+        cv::threshold(light, binary_color_img, thresh, 255, cv::THRESH_BINARY);
     }
     //binary_light_img = binary_color_img & binary_brightness_img;
     auto contours_light = FindContours(binary_color_img);
@@ -536,7 +536,7 @@ bool DetectArmor(cv::Mat &img, cv::Point3f &target)
     std::vector<cv::RotatedRect> lights;
     std::vector<ArmorInfo> armors;
 
-    cv::cvtColor(img, gray_img_, CV_BGR2GRAY);
+    cv::cvtColor(img, gray_img_, cv::COLOR_BGR2GRAY);
     DetectLights(img, lights);
     FilterLights(lights);
     PossibleArmors(lights, armors);

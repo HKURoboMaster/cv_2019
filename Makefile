@@ -5,13 +5,13 @@ else
 endif
 
 trial: constraint_set.o crc.o protocol.o main.o
-	g++ constraint_set.o crc.o protocol.o main.o -o trial `pkg-config --libs opencv eigen3`
+	g++ constraint_set.o crc.o protocol.o main.o -o trial `pkg-config --libs opencv4 eigen3`
 
 constraint_set.o: constraint_set.cpp
-	g++ $(FLG) -std=c++11 -c constraint_set.cpp `pkg-config --cflags opencv eigen3`
+	g++ $(FLG) -std=c++11 -c constraint_set.cpp `pkg-config --cflags opencv4 eigen3`
 
 main.o: main.cpp
-	g++ $(FLG) -std=c++11 -c main.cpp `pkg-config --cflags opencv`
+	g++ $(FLG) -std=c++11 -c main.cpp `pkg-config --cflags opencv4`
 
 protocol.o: protocol.cpp
 	g++ $(FLG) -std=c++11 -c protocol.cpp
