@@ -31,7 +31,6 @@ int serial_fd;
 
 bool Connect(const char *serial_device)
 {
-    int baudrate = 921600;
     int stop_bits = 1;
     int data_bits = 8;
     char parity_bits = 'N';
@@ -51,13 +50,6 @@ bool Connect(const char *serial_device)
         return false;
     }
 
-    int st_baud[] = {B4800, B9600, B19200, B38400,
-                     B57600, B115200, B230400, B921600
-                    };
-    int std_rate[] = {4800, 9600, 19200, 38400, 57600, 115200,
-                      230400, 921600, 1000000, 1152000, 3000000
-                     };
-    int i, j;
     /* save current port parameter */
     if (tcgetattr(serial_fd, &old_termios) != 0)
     {
@@ -107,17 +99,16 @@ bool Connect(const char *serial_device)
         break; //8N1 default config
     }
     /* config baudrate */
-    j = sizeof(std_rate) / 4;
-    for (i = 0; i < j; ++i)
-    {
-        if (std_rate[i] == baudrate)
-        {
-            /* set standard baudrate */
-            cfsetispeed(&new_termios, st_baud[i]);
-            cfsetospeed(&new_termios, st_baud[i]);
-            break;
-        }
-    }
+
+    /* set standard baudrate */
+#if defined(__linux__)
+    cfsetispeed(&new_termios, B921600);
+    cfsetospeed(&new_termios, B921600);
+#elif defined(__APPLE__)
+    cfsetispeed(&new_termios, B38400);
+    cfsetospeed(&new_termios, B38400);
+#endif
+
     /* config stop bit */
     if (stop_bits == 1)
         new_termios.c_cflag &= ~CSTOPB;
