@@ -498,6 +498,10 @@ void DetectLights(const cv::Mat &src, std::vector<cv::RotatedRect> &lights)
             thresh = red_thread_;
         cv::threshold(light, binary_color_img, thresh, 255, cv::THRESH_BINARY);
     }
+    if(verbose > 1)
+    {
+        cv::imshow("Binary Color Image", binary_color_img);
+    }
     //binary_light_img = binary_color_img & binary_brightness_img;
     auto contours_light = FindContours(binary_color_img);
     auto contours_brightness = FindContours(binary_brightness_img);

@@ -28,6 +28,12 @@ using namespace cv;
 int verbose = 0;
 bool serial_comm;
 
+enum INPUT_TYPE
+{
+    CAMERA = 0,
+    VIDEO
+};
+
 void sig_handler(int sig)
 {
     if(serial_comm)
@@ -46,9 +52,12 @@ void write(cv::Mat &img, const char *str, const cv::Point &pt)
 
 int main(int argc, char *argv[])
 {
+    INPUT_TYPE input_type = CAMERA;
     string serial_device("/dev/ttyUSB0");
     serial_comm = true;
     int camera_id = 0, custom_width = 640, custom_height = 480;
+    bool single_step = false;
+    string video_file;
     if(argc > 1)
     {
         for(int i = 1; i < argc; i++)
@@ -73,9 +82,18 @@ int main(int argc, char *argv[])
             {
                 custom_height = atoi(argv[++i]);
             }
+            else if(strcmp(argv[i], "--video") == 0 && i+1 < argc)
+            {
+                input_type = VIDEO;
+                video_file = argv[++i];
+            }
             else if(strcmp(argv[i], "--dummy") == 0)
             {
                 serial_comm = false;
+            }
+            else if(strcmp(argv[i], "--single-step") == 0)
+            {
+                single_step = true;
             }
             else
             {
@@ -100,16 +118,28 @@ int main(int argc, char *argv[])
     float distortion_coeffs[] = { 0.44686f, 15.5414f, -0.009048f, -0.009717f, -439.74f };
     constraint_set::InitializeConstraintSet(intrinsic_matrix, distortion_coeffs);
     Point3f target;
-    if(!cap.open(camera_id))
+    switch(input_type)
     {
-        cerr << "Unable to open camera" << endl;
-        return 1;
+        case CAMERA:
+            if(!cap.open(camera_id))
+            {
+                cerr << "Unable to open camera" << endl;
+                return 1;
+            }
+            cap.set(cv::CAP_PROP_FRAME_WIDTH, custom_width);
+            cap.set(cv::CAP_PROP_FRAME_HEIGHT, custom_height);
+            break;
+        case VIDEO:
+            if(!cap.open(video_file.c_str()))
+            {
+                cerr << "Unable to open video file" << endl;
+                return 1;
+            }
+            break;
     }
-    cap.set(cv::CAP_PROP_FRAME_WIDTH, custom_width);
-    cap.set(cv::CAP_PROP_FRAME_HEIGHT, custom_height);
     if(!cap.read(img))
     {
-        cerr << "Unable to read image from camera" << endl;
+        cerr << "Unable to read image from input" << endl;
         return 1;
     }
     if(serial_comm && !protocol::Connect(serial_device.c_str()))
@@ -119,11 +149,21 @@ int main(int argc, char *argv[])
     }
     char buf[100];
     bool running = true;
-    float angle_amp = 1.0f;
     signal(SIGINT, sig_handler);
     signal(SIGKILL, sig_handler);
-    cout << "INPUT:  CAMERA " << img.cols << "x" << img.rows << endl;
-    cout << "OUTPUT: " << serial_device << endl;
+    switch(input_type)
+    {
+        case CAMERA:
+            cout << "INPUT: CAMERA #" << camera_id << "@" << img.cols << "x" << img.rows << endl;
+            break;
+        case VIDEO:
+            cout << "INPUT: VIDEO " << video_file << "@" << img.cols << "x" << img.rows << endl;
+            break;
+    }
+    if(serial_comm)
+    {
+        cout << "OUTPUT: " << serial_device << endl;
+    }
     while(running)
     {
         auto Tstart = chrono::system_clock::now();
@@ -135,7 +175,7 @@ int main(int argc, char *argv[])
             yaw = yaw / M_PI * 180; pitch = pitch / M_PI * 180;
             if(serial_comm)
             {
-                protocol::Send(yaw * angle_amp, pitch * angle_amp);
+                protocol::Send(yaw, pitch);
             }
             if(verbose > 0)
             {
@@ -143,8 +183,6 @@ int main(int argc, char *argv[])
                 write(img, buf, cv::Point(10, 40));
                 sprintf(buf, "YAW=% 4.2fDEG PITCH=% 4.2fDEG", yaw, pitch);
                 write(img, buf, cv::Point(10, 60));
-                sprintf(buf, "AMP%fx YAW= % 4.2fDEG PITCH=% 4.2fDEG", angle_amp, yaw * angle_amp, pitch * angle_amp);
-                write(img, buf, cv::Point(10, 80));
             }
         }
         if(verbose > 0)
@@ -157,18 +195,20 @@ int main(int argc, char *argv[])
             line(img, Point(img.cols/2 - 10, img.rows/2), Point(img.cols/2 + 10, img.rows/2), Scalar(255, 0, 0));
             line(img, Point(img.cols/2, img.rows/2 - 10), Point(img.cols/2, img.rows/2 + 10), Scalar(255, 0, 0));
             imshow("constraint_set", img);
-            switch(waitKey(1))
+            if(single_step)
             {
-                case 27:
+                int key = 0;
+                do
+                {
+                    key = waitKey(0);
+                } while(key != ' ' && key != 27);
+                if(key == 27)
                     running = false;
-                    break;
-                case 'a':
-                    if(angle_amp > 0.01f)
-                        angle_amp -= 0.01f;
-                    break;
-                case 'd':
-                    angle_amp += 0.01f;
-                    break;
+            }
+            else
+            {
+                if(waitKey(1) == 27)
+                    running = false;
             }
         }
     }
