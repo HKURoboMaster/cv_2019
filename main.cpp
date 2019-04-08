@@ -26,10 +26,14 @@
 using namespace std;
 using namespace cv;
 int verbose = 0;
+bool serial_comm;
 
 void sig_handler(int sig)
 {
-    protocol::Disconnect();
+    if(serial_comm)
+    {
+        protocol::Disconnect();
+    }
     exit(0);
 }
 
@@ -43,6 +47,8 @@ void write(cv::Mat &img, const char *str, const cv::Point &pt)
 int main(int argc, char *argv[])
 {
     string serial_device("/dev/ttyUSB0");
+    serial_comm = true;
+    int camera_id = 0, custom_width = 640, custom_height = 480;
     if(argc > 1)
     {
         for(int i = 1; i < argc; i++)
@@ -55,7 +61,23 @@ int main(int argc, char *argv[])
             {
                 serial_device = argv[++i];
             }
-            else if(strcmp(argv[i], "--help") == 0)
+            else if(strcmp(argv[i], "--camera") == 0 && i+1 < argc)
+            {
+                camera_id = argv[++i][0] - '0';
+            }
+            else if(strcmp(argv[i], "--width") == 0 && i+1 < argc)
+            {
+                custom_width = atoi(argv[++i]);
+            }
+            else if(strcmp(argv[i], "--height") == 0 && i+1 < argc)
+            {
+                custom_height = atoi(argv[++i]);
+            }
+            else if(strcmp(argv[i], "--dummy") == 0)
+            {
+                serial_comm = false;
+            }
+            else
             {
                 cout << "Available parameters: " << endl;
                 cout << "  --verbose <verbose_level>" << endl;
@@ -70,11 +92,6 @@ int main(int argc, char *argv[])
             }
         }
     }
-    if(!protocol::Connect(serial_device.c_str()))
-    {
-        cerr << "Unable to connect " << serial_device << endl;
-        return 1;
-    }
     VideoCapture cap;
     Mat img, res;
     float intrinsic_matrix[] = { 1536.07f, 0.0f, 320.0f,
@@ -83,9 +100,21 @@ int main(int argc, char *argv[])
     float distortion_coeffs[] = { 0.44686f, 15.5414f, -0.009048f, -0.009717f, -439.74f };
     constraint_set::InitializeConstraintSet(intrinsic_matrix, distortion_coeffs);
     Point3f target;
-    if(!cap.open(0) || !cap.read(img))
+    if(!cap.open(camera_id))
     {
         cerr << "Unable to open camera" << endl;
+        return 1;
+    }
+    cap.set(cv::CAP_PROP_FRAME_WIDTH, custom_width);
+    cap.set(cv::CAP_PROP_FRAME_HEIGHT, custom_height);
+    if(!cap.read(img))
+    {
+        cerr << "Unable to read image from camera" << endl;
+        return 1;
+    }
+    if(serial_comm && !protocol::Connect(serial_device.c_str()))
+    {
+        cerr << "Unable to connect " << serial_device << endl;
         return 1;
     }
     char buf[100];
@@ -104,7 +133,10 @@ int main(int argc, char *argv[])
         {
             float yaw = -atan2(target.x, target.z), pitch = -atan2(target.y, sqrt(target.x*target.x + target.z*target.z));
             yaw = yaw / M_PI * 180; pitch = pitch / M_PI * 180;
-            protocol::Send(yaw * angle_amp, pitch * angle_amp);
+            if(serial_comm)
+            {
+                protocol::Send(yaw * angle_amp, pitch * angle_amp);
+            }
             if(verbose > 0)
             {
                 sprintf(buf, "Detected @(% 6.2f, % 6.2f, % 6.2f)", target.x, target.y, target.z);
@@ -140,6 +172,9 @@ int main(int argc, char *argv[])
             }
         }
     }
-    protocol::Disconnect();
+    if(serial_comm)
+    {
+        protocol::Disconnect();
+    }
     return 0;
 }
