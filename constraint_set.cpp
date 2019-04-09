@@ -201,7 +201,7 @@ std::vector<std::vector<cv::Point>> FindContours(const cv::Mat &binary_img)
 
 int filter_x_count_ = 0, filter_y_count_ = 0, filter_z_count_ = 0;
 int filter_distance_count_ = 0, filter_pitch_count_ = 0, filter_yaw_count_ = 0;
-ENEMY_COLOR enemy_color_ = BLUE;
+ENEMY_COLOR enemy_color_ = RED;
 bool using_hsv_ = true;
 const float armor_width = 120.0f, armor_height = 60.0f;
 const float light_max_aspect_ratio_ = 20.0f;
