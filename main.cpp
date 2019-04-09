@@ -20,13 +20,18 @@
 #include <string>
 #include <cstdio>
 #include <chrono>
+#include <mutex>
+#include <atomic>
 #include <signal.h>
 #include "constraint_set.h"
 #include "protocol.h"
 using namespace std;
 using namespace cv;
 int verbose = 0;
-bool serial_comm;
+bool serial_comm, recording;
+atomic<bool> running;
+mutex mtx;
+VideoWriter writer;
 
 enum INPUT_TYPE
 {
@@ -34,13 +39,30 @@ enum INPUT_TYPE
     VIDEO
 };
 
-void sig_handler(int sig)
+void clean_up(bool jam)
 {
+    mtx.lock();
+    running = false;
     if(serial_comm)
     {
         protocol::Disconnect();
     }
-    exit(0);
+    if(recording)
+    {
+        writer.release();
+    }
+    if(jam)
+    {
+        // Exit before unlocking
+        // to jam everything in the main loop
+        exit(0);
+    }
+    mtx.unlock();
+}
+
+void sig_handler(int sig)
+{
+    clean_up(true);
 }
 
 void write(cv::Mat &img, const char *str, const cv::Point &pt)
@@ -57,7 +79,7 @@ int main(int argc, char *argv[])
     serial_comm = true;
     int camera_id = 0, custom_width = 640, custom_height = 480;
     bool single_step = false;
-    string video_file;
+    string video_file, record_file;
     if(argc > 1)
     {
         for(int i = 1; i < argc; i++)
@@ -86,6 +108,11 @@ int main(int argc, char *argv[])
             {
                 input_type = VIDEO;
                 video_file = argv[++i];
+            }
+            else if(strcmp(argv[i], "--record") == 0 && i+1 < argc)
+            {
+                recording = true;
+                record_file = argv[++i];
             }
             else if(strcmp(argv[i], "--dummy") == 0)
             {
@@ -147,35 +174,52 @@ int main(int argc, char *argv[])
         cerr << "Unable to connect " << serial_device << endl;
         return 1;
     }
+    if(recording)
+    {
+        writer.open(record_file.c_str(), VideoWriter::fourcc('M', 'J', 'P', 'G'), cap.get(cv::CAP_PROP_FPS), Size(custom_width, custom_height));
+    }
     char buf[100];
-    bool running = true;
+    running = true;
     signal(SIGINT, sig_handler);
     signal(SIGKILL, sig_handler);
+    signal(SIGTERM, sig_handler);
     switch(input_type)
     {
         case CAMERA:
-            cout << "INPUT: CAMERA #" << camera_id << "@" << img.cols << "x" << img.rows << endl;
+            cout << "INPUT: CAMERA #" << camera_id << "@" << cap.get(cv::CAP_PROP_FRAME_WIDTH) << "x" << cap.get(cv::CAP_PROP_FRAME_HEIGHT) << "@" << cap.get(cv::CAP_PROP_FPS) << "FPS" << endl;
             break;
         case VIDEO:
-            cout << "INPUT: VIDEO " << video_file << "@" << img.cols << "x" << img.rows << endl;
+            cout << "INPUT: VIDEO " << video_file << "@" << cap.get(cv::CAP_PROP_FRAME_WIDTH) << "x" << cap.get(cv::CAP_PROP_FRAME_HEIGHT) << "@" << cap.get(cv::CAP_PROP_FPS) << "FPS" << endl;
             break;
     }
     if(serial_comm)
     {
         cout << "OUTPUT: " << serial_device << endl;
     }
+    if(recording)
+    {
+        cout << "RECORDING: " << record_file << endl;
+    }
     while(running)
     {
         auto Tstart = chrono::system_clock::now();
         if(!cap.read(img))
             break;
+        if(recording)
+        {
+            mtx.lock();
+            writer.write(img);
+            mtx.unlock();
+        }
         if(constraint_set::DetectArmor(img, target))
         {
             float yaw = -atan2(target.x, target.z), pitch = -atan2(target.y, sqrt(target.x*target.x + target.z*target.z));
             yaw = yaw / M_PI * 180; pitch = pitch / M_PI * 180;
             if(serial_comm)
             {
+                mtx.lock();
                 protocol::Send(yaw, pitch);
+                mtx.unlock();
             }
             if(verbose > 0)
             {
@@ -212,9 +256,6 @@ int main(int argc, char *argv[])
             }
         }
     }
-    if(serial_comm)
-    {
-        protocol::Disconnect();
-    }
+    clean_up(false);
     return 0;
 }
