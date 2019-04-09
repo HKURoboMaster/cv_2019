@@ -5,7 +5,7 @@ else
 endif
 
 trial: constraint_set.o crc.o protocol.o main.o
-	g++ constraint_set.o crc.o protocol.o main.o -o trial `pkg-config --libs opencv4 eigen3`
+	g++ constraint_set.o crc.o protocol.o main.o -o trial `pkg-config --libs opencv4 eigen3` -pthread
 
 constraint_set.o: constraint_set.cpp
 	g++ $(FLG) -std=c++11 -c constraint_set.cpp `pkg-config --cflags opencv4 eigen3`
