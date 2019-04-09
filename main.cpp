@@ -124,15 +124,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                cout << "Available parameters: " << endl;
-                cout << "  --verbose <verbose_level>" << endl;
-                cout << "  Specify verbose level" << endl;
-                cout << "    0 (default) - Only output I/O information on successful start-up" << endl;
-                cout << "    1 - Show real-time recognition and transmission performance on a window" << endl;
-                cout << endl;
-                cout << "  --serial <serial_device>" << endl;
-                cout << "  Specify serial device for control signal transmission" << endl;
-                cout << "    /dev/ttyUSB0 (default)" << endl;
+                cout << "Unrecognized parameter " << argv[i] << endl;
                 return 0;
             }
         }
