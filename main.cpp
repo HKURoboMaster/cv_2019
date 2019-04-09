@@ -113,7 +113,6 @@ void Detector()
         detected = constraint_set::DetectArmor(img, target);
         auto Tend = chrono::system_clock::now();
         new_image = false;
-        mtx_input.unlock();
         mtx_output.lock();
         if(!running) break;
         if(detected)
@@ -139,6 +138,10 @@ void Detector()
                 write(img, buf, cv::Point(10, 60));
             }
             imshow("constraint_set", img);
+        }
+        mtx_input.unlock();
+        if(verbose > 0)
+        {
             if(single_step)
             {
                 int key = 0;
