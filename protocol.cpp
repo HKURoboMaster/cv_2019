@@ -22,6 +22,9 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifdef __linux__
+#include <sys/select.h>
+#endif
 using namespace std;
 
 namespace protocol
