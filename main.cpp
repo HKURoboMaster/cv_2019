@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
         }
     }
     Mat img, res;
-    float intrinsic_matrix[3][3] = { 1536.07f, 0.0f, 320.0f,
+    float intrinsic_matrix[9] = { 1536.07f, 0.0f, 320.0f,
                                        0.0f, 1542.55f, 240.0f,
                                        0.0f, 0.0f, 1.0f };
     float distortion_coeffs[5] = { 0.44686f, 15.5414f, -0.009048f, -0.009717f, -439.74f };
@@ -235,7 +235,7 @@ int main(int argc, char *argv[])
         for(int i = 0; i < 3; i++)
         {
             for(int j = 0; j < 3; j++)
-                fin >> intrinsic_matrix[i][j];
+                fin >> intrinsic_matrix[i*3+j];
         }
         for(int i = 0; i < 5; i++)
             fin >> distortion_coeffs[i];
