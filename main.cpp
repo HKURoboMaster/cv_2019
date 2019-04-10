@@ -114,7 +114,12 @@ void Detector()
         auto Tend = chrono::system_clock::now();
         new_image = false;
         mtx_output.lock();
-        if(!running) break;
+        if(!running)
+        {
+            mtx_input.unlock();
+            mtx_output.unlock();
+            break;
+        }
         if(detected)
         {
             yaw = -atan2(target.x, target.z) / M_PI * 180;
