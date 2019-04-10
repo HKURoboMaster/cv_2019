@@ -78,7 +78,7 @@ void calibration()
     vector<float> reprojection_err;
     double avg_err = 0.0;
     intrinsic_matrix = Mat::eye(3, 3, CV_64F);
-    distortion_coeff = Mat::zeros(8, 1, CV_64F);
+    distortion_coeff = Mat::zeros(5, 1, CV_64F);
     
     for(int i = 0; i < board_size.height; i++)
     {
@@ -100,7 +100,7 @@ void calibration()
         }
         fout << endl;
     }
-    for(int i = 0; i < 8; i++)
+    for(int i = 0; i < 5; i++)
         fout << distortion_coeff.at<double>(0, i) << ' ';
     fout << endl;
     fout.close();

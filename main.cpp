@@ -15,6 +15,7 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  ***************************************************************************/
 #include <iostream>
+#include <fstream>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -223,10 +224,23 @@ int main(int argc, char *argv[])
         }
     }
     Mat img, res;
-    float intrinsic_matrix[] = { 1536.07f, 0.0f, 320.0f,
+    float intrinsic_matrix[3][3] = { 1536.07f, 0.0f, 320.0f,
                                        0.0f, 1542.55f, 240.0f,
                                        0.0f, 0.0f, 1.0f };
-    float distortion_coeffs[] = { 0.44686f, 15.5414f, -0.009048f, -0.009717f, -439.74f };
+    float distortion_coeffs[5] = { 0.44686f, 15.5414f, -0.009048f, -0.009717f, -439.74f };
+    ifstream fin("camera.txt");
+    if(fin)
+    {
+        cout << "Reading calibration data from camera.txt" << endl;
+        for(int i = 0; i < 3; i++)
+        {
+            for(int j = 0; j < 3; j++)
+                fin >> intrinsic_matrix[i][j];
+        }
+        for(int i = 0; i < 5; i++)
+            fin >> distortion_coeffs[i];
+        fin.close();
+    }
     constraint_set::InitializeConstraintSet(intrinsic_matrix, distortion_coeffs);
     switch(input_type)
     {
