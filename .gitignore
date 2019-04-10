@@ -2,3 +2,4 @@ trial
 calibration
 *.o
 camera.txt
+*.dSYM
