@@ -126,7 +126,7 @@ void Detector()
             yaw = -atan2(target.x, target.z) / M_PI * 180;
             pitch = -atan2(target.y, sqrt(target.x*target.x + target.z*target.z)) / M_PI * 180;
             if(serial_comm)
-                protocol::Send(yaw, pitch);
+                protocol::SendGimbalAngle(yaw, pitch);
         }
         mtx_output.unlock();
         if(verbose > 0)

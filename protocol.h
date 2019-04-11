@@ -22,7 +22,8 @@ namespace protocol
 {
 
 bool Connect(const char *serial_device);
-void Send(const float yaw, const float pitch);
+void SendGimbalAngle(const float yaw, const float pitch);
+void SendShootCmd(bool shoot);
 void Disconnect();
 
 }

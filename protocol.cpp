@@ -164,6 +164,16 @@ struct gimbal_ctrl
     }
 };
 
+struct shoot_ctrl
+{
+    uint8_t shoot_cmd, c_shoot_cmd, fric_wheel_run, fric_wheel_spd;
+    shoot_ctrl()
+    {
+        shoot_cmd = fric_wheel_run = fric_wheel_spd = 0;
+        c_shoot_cmd = 0;
+    }
+};
+
 struct header
 {
     uint8_t sof;
@@ -174,15 +184,15 @@ struct header
     {
         sof = 0xa0u;
         seq = crc8 = 0;
-        data_length = sizeof(gimbal_ctrl);
     }
 };
 #pragma pack(pop)
 
-void Send(const float yaw, const float pitch)
+void SendGimbalAngle(const float yaw, const float pitch)
 {
     const uint16_t cmd_id = 0x00a1u;
     static header header_data;
+    header_data.data_length = sizeof(gimbal_ctrl);
     static gimbal_ctrl gimbal_ctrl_data;
     static uint8_t buffer[100];
 
@@ -200,6 +210,24 @@ void Send(const float yaw, const float pitch)
     memcpy(buffer + sizeof(header_data) + sizeof(cmd_id) + sizeof(gimbal_ctrl_data), &crc16, sizeof(crc16));
 
     write(serial_fd, buffer, sizeof(header_data) + sizeof(cmd_id) + sizeof(gimbal_ctrl_data) + sizeof(crc16));
+}
+
+void SendShootCmd(bool shoot)
+{
+    const uint16_t cmd_id = 0x00a2u;
+    static header header_data;
+    header_data.data_length = sizeof(shoot_ctrl);
+    static shoot_ctrl shoot_ctrl_data;
+    shoot_ctrl_data.c_shoot_cmd = shoot ? 1 : 0;
+    static uint8_t buffer[100];
+    ++header_data.seq;
+    header_data.crc8 = CRC8Calc((uint8_t*)(&header_data), sizeof(header_data) - sizeof(header_data.crc8));
+    memcpy(buffer, &header_data, sizeof(header_data));
+    memcpy(buffer + sizeof(header_data), &cmd_id, sizeof(cmd_id));
+    memcpy(buffer + sizeof(header_data) + sizeof(cmd_id), &shoot_ctrl_data, sizeof(shoot_ctrl_data));
+    uint16_t crc16 = CRC16Calc(buffer, sizeof(header_data) + sizeof(cmd_id) + sizeof(shoot_ctrl_data));
+    memcpy(buffer + sizeof(header_data) + sizeof(cmd_id) + sizeof(shoot_ctrl_data), &crc16, sizeof(crc16));
+    write(serial_fd, buffer, sizeof(header_data) + sizeof(cmd_id) + sizeof(shoot_ctrl_data) + sizeof(crc16));
 }
 
 }
