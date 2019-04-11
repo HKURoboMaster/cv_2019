@@ -127,6 +127,20 @@ void Detector()
             pitch = -atan2(target.y, sqrt(target.x*target.x + target.z*target.z)) / M_PI * 180;
             if(serial_comm)
                 protocol::SendGimbalAngle(yaw, pitch);
+            if(fabs(yaw) < 0.5f && fabs(pitch) < 0.5f)
+            {
+                if(serial_comm)
+                    protocol::SendShootCmd(true);
+                if(verbose > 0)
+                {
+                    write(img, "SHOOT", cv::Point(10, 80));
+                }
+            }
+            else
+            {
+                if(serial_comm)
+                    protocol::SendShootCmd(false);
+            }
         }
         mtx_output.unlock();
         if(verbose > 0)
