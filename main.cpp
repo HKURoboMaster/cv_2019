@@ -142,6 +142,11 @@ void Detector()
                     protocol::SendShootCmd(false);
             }
         }
+        else
+        {
+            if(serial_comm)
+                protocol::SendShootCmd(false);
+        }
         mtx_output.unlock();
         if(verbose > 0)
         {
