@@ -148,8 +148,12 @@ void Detector()
         }
         else
         {
-            if(robot == "sentry" && serial_comm)
-                protocol::SendShootCmd(false);
+            if(serial_comm)
+            {
+                protocol::SendGimbalAngle(0.0f, 0.0f);
+                if(robot == "sentry")
+                    protocol::SendShootCmd(false);
+            }
         }
         mtx_output.unlock();
         if(verbose > 0)
