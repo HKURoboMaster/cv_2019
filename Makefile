@@ -33,4 +33,4 @@ constraint_set.cpp: constraint_set.h
 protocol.cpp: protocol.h
 
 clean:
-	rm -rf trial *.o
+	rm -rf calibration trial *.o
