@@ -38,6 +38,7 @@ mutex mtx_input, mtx_output;
 VideoCapture cap;
 VideoWriter writer;
 Mat img;
+string robot;
 
 enum INPUT_TYPE
 {
@@ -127,24 +128,27 @@ void Detector()
             pitch = -atan2(target.y, sqrt(target.x*target.x + target.z*target.z)) / M_PI * 180;
             if(serial_comm)
                 protocol::SendGimbalAngle(yaw, pitch);
-            if(fabs(yaw) < 0.5f && fabs(pitch) < 0.5f)
+            if(robot == "sentry")
             {
-                if(serial_comm)
-                    protocol::SendShootCmd(true);
-                if(verbose > 0)
+                if(fabs(yaw) < 0.5f && fabs(pitch) < 0.5f)
                 {
-                    write(img, "SHOOT", cv::Point(10, 80));
+                    if(serial_comm)
+                        protocol::SendShootCmd(true);
+                    if(verbose > 0)
+                    {
+                        write(img, "SHOOT", cv::Point(10, 80));
+                    }
                 }
-            }
-            else
-            {
-                if(serial_comm)
-                    protocol::SendShootCmd(false);
+                else
+                {
+                    if(serial_comm)
+                        protocol::SendShootCmd(false);
+                }
             }
         }
         else
         {
-            if(serial_comm)
+            if(robot == "sentry" && serial_comm)
                 protocol::SendShootCmd(false);
         }
         mtx_output.unlock();
@@ -226,6 +230,10 @@ int main(int argc, char *argv[])
             {
                 recording = true;
                 record_file = argv[++i];
+            }
+            else if(strcmp(argv[i], "--robot") == 0 && i+1 < argc)
+            {
+                robot = argv[++i];
             }
             else if(strcmp(argv[i], "--dummy") == 0)
             {
