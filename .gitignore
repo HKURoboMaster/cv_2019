@@ -1,5 +1,6 @@
 trial
 calibration
+picker
 *.o
 camera.txt
 *.dSYM

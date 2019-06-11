@@ -6,7 +6,10 @@ endif
 
 .PHONY: clean all
 
-all: trial calibration
+all: trial calibration picker
+
+picker: picker.cpp
+	g++ $(FLG) `pkg-config --cflags --libs opencv4` picker.cpp -o picker
 
 trial: constraint_set.o crc.o protocol.o main.o
 	g++ constraint_set.o crc.o protocol.o main.o -o trial `pkg-config --libs opencv4 eigen3` -pthread
@@ -33,4 +36,4 @@ constraint_set.cpp: constraint_set.h
 protocol.cpp: protocol.h
 
 clean:
-	rm -rf calibration trial *.o
+	rm -rf calibration trial picker *.o
