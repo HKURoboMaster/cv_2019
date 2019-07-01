@@ -26,7 +26,7 @@
 #include <thread>
 #include <signal.h>
 #include <unistd.h>
-#include "constraint_set.h"
+#include "ng.h"
 #include "protocol.h"
 using namespace std;
 using namespace cv;
@@ -112,7 +112,7 @@ void Detector()
             continue;
         }
         auto Tstart = chrono::system_clock::now();
-        detected = constraint_set::DetectArmor(img, target);
+        detected = DetectionNG::DetectArmor(img, target);
         auto Tend = chrono::system_clock::now();
         new_image = false;
         mtx_output.lock();
@@ -170,7 +170,7 @@ void Detector()
                 sprintf(buf, "Transmitted YAW=% 4.2fDEG PITCH=% 4.2fDEG", yaw, pitch);
                 write(img, buf, cv::Point(10, 60));
             }
-            imshow("constraint_set", img);
+            imshow("DetectionNG", img);
         }
         mtx_input.unlock();
         if(verbose > 0)
@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
             fin >> distortion_coeffs[i];
         fin.close();
     }
-    constraint_set::InitializeConstraintSet(intrinsic_matrix, distortion_coeffs);
+    DetectionNG::InitDetector(intrinsic_matrix, distortion_coeffs);
     switch(input_type)
     {
         case CAMERA:
