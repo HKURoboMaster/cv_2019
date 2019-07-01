@@ -148,86 +148,80 @@ void Disconnect()
     serial_fd = -1;
 }
 
+#define GIMBAL_CMD_SET (0x03u)
+#define MANIFOLD2_ADDRESS (0x00u)
+#define GIMBAL_ADDRESS (0x02u)
 #pragma pack(push, 1)
+#define CMD_SET_GIMBAL_ANGLE (0x03u)
 struct gimbal_ctrl
 {
-    uint32_t time;
-    uint8_t ctrl_mode;
-    float pit_ref, yaw_ref, tgt_dist, x, y, z;
-    uint8_t visual_valid;
-    gimbal_ctrl()
+    union
     {
-        time = 0;
-        ctrl_mode = 7;
-        pit_ref = yaw_ref = tgt_dist = x = y = z = 0.0f;
-        visual_valid = 0;
-    }
-};
-
-struct shoot_ctrl
-{
-    uint8_t shoot_cmd, c_shoot_cmd, fric_wheel_run, fric_wheel_spd;
-    shoot_ctrl()
-    {
-        shoot_cmd = fric_wheel_run = fric_wheel_spd = 0;
-        c_shoot_cmd = 0;
-    }
+        uint8_t flag;
+        struct
+        {
+            uint8_t yaw_mode: 1;
+            uint8_t pitch_mode: 1;
+        } bit;
+    } ctrl;
+    int16_t pitch;
+    int16_t yaw;
 };
 
 struct header
 {
-    uint8_t sof;
-    uint16_t data_length;
-    uint8_t seq;
-    uint8_t crc8;
+    uint32_t sof : 8;
+    uint32_t length : 10;
+    uint32_t version : 6;
+    uint32_t session_id : 5;
+    uint32_t is_ack : 1;
+    uint32_t reserved0 : 2; // Always 0
+    uint32_t sender: 8;
+    uint32_t receiver: 8;
+    uint32_t reserved1 : 16;
+    uint32_t seq_num : 16;
+    uint32_t crc : 16;
     header()
     {
-        sof = 0xa0u;
-        seq = crc8 = 0;
+        sof = 0xAA;
+        version = 0x00;
+        session_id = 0;
+        is_ack = 0;
+        reserved0 = 0;
+        sender = MANIFOLD2_ADDRESS;
+        receiver = GIMBAL_ADDRESS;
+        reserved1 = 0;
+        seq_num = 0;
     }
 };
+
 #pragma pack(pop)
 
 void SendGimbalAngle(const float yaw, const float pitch)
 {
-    const uint16_t cmd_id = 0x00a1u;
+    static const uint8_t cmd_set_prefix[] = {CMD_SET_GIMBAL_ANGLE, GIMBAL_CMD_SET};
+    static const uint32_t HEADER_LEN = sizeof(header), CMD_SET_PREFIX_LEN = 2*sizeof(uint8_t);
+    static const uint32_t CRC_HEADER_LEN = sizeof(uint16_t), CRC_DATA_LEN = sizeof(uint32_t);
+    static const uint32_t DATA_LEN = sizeof(gimbal_ctrl);
+    static const uint16_t pack_length = HEADER_LEN + CMD_SET_PREFIX_LEN + DATA_LEN + CRC_DATA_LEN;
     static header header_data;
-    header_data.data_length = sizeof(gimbal_ctrl);
     static gimbal_ctrl gimbal_ctrl_data;
-    static uint8_t buffer[100];
+    static uint8_t buffer[1024];
 
-    ++gimbal_ctrl_data.time;
-    gimbal_ctrl_data.yaw_ref = yaw;
-    gimbal_ctrl_data.pit_ref = pitch;
+    gimbal_ctrl_data.ctrl.bit.pitch_mode = 1;
+    gimbal_ctrl_data.ctrl.bit.yaw_mode = 1;
+    gimbal_ctrl_data.pitch = pitch;
+    gimbal_ctrl_data.yaw = yaw;
 
-    ++header_data.seq;
-    header_data.crc8 = CRC8Calc((uint8_t*)(&header_data), sizeof(header_data) - sizeof(header_data.crc8));
-    
-    memcpy(buffer, &header_data, sizeof(header_data));
-    memcpy(buffer + sizeof(header_data), &cmd_id, sizeof(cmd_id));
-    memcpy(buffer + sizeof(header_data) + sizeof(cmd_id), &gimbal_ctrl_data, sizeof(gimbal_ctrl_data));
-    uint16_t crc16 = CRC16Calc(buffer, sizeof(header_data) + sizeof(cmd_id) + sizeof(gimbal_ctrl_data));
-    memcpy(buffer + sizeof(header_data) + sizeof(cmd_id) + sizeof(gimbal_ctrl_data), &crc16, sizeof(crc16));
-
-    write(serial_fd, buffer, sizeof(header_data) + sizeof(cmd_id) + sizeof(gimbal_ctrl_data) + sizeof(crc16));
-}
-
-void SendShootCmd(bool shoot)
-{
-    const uint16_t cmd_id = 0x00a2u;
-    static header header_data;
-    header_data.data_length = sizeof(shoot_ctrl);
-    static shoot_ctrl shoot_ctrl_data;
-    shoot_ctrl_data.c_shoot_cmd = shoot ? 1 : 0;
-    static uint8_t buffer[100];
-    ++header_data.seq;
-    header_data.crc8 = CRC8Calc((uint8_t*)(&header_data), sizeof(header_data) - sizeof(header_data.crc8));
-    memcpy(buffer, &header_data, sizeof(header_data));
-    memcpy(buffer + sizeof(header_data), &cmd_id, sizeof(cmd_id));
-    memcpy(buffer + sizeof(header_data) + sizeof(cmd_id), &shoot_ctrl_data, sizeof(shoot_ctrl_data));
-    uint16_t crc16 = CRC16Calc(buffer, sizeof(header_data) + sizeof(cmd_id) + sizeof(shoot_ctrl_data));
-    memcpy(buffer + sizeof(header_data) + sizeof(cmd_id) + sizeof(shoot_ctrl_data), &crc16, sizeof(crc16));
-    write(serial_fd, buffer, sizeof(header_data) + sizeof(cmd_id) + sizeof(shoot_ctrl_data) + sizeof(crc16));
+    ++header_data.seq_num;
+    header_data.length = pack_length;
+    header_data.crc = CRC16Calc((uint8_t*)&header_data, HEADER_LEN - CRC_HEADER_LEN);
+    memcpy(buffer, (uint8_t*)&header_data, HEADER_LEN);
+    memcpy(buffer + HEADER_LEN, cmd_set_prefix, CMD_SET_PREFIX_LEN);
+    memcpy(buffer + HEADER_LEN + CMD_SET_PREFIX_LEN, (uint8_t*)&gimbal_ctrl_data, DATA_LEN);
+    uint32_t crc_data = CRC32Calc(buffer, pack_length - CRC_DATA_LEN);
+    memcpy(buffer + pack_length - CRC_DATA_LEN, &crc_data, CRC_DATA_LEN);
+    write(serial_fd, buffer, pack_length);
 }
 
 }
