@@ -1,4 +1,4 @@
-#include <bits/stdc++.h>
+#include <vector>
 #include "ng.h"
 using namespace std;
 using namespace cv;
@@ -20,9 +20,26 @@ namespace DetectionNG
 
     struct SingleLightbar
     {
-        Point2f center;
+        // 1 2
+        // 0 3
+        Point2f center, vertex[4];
         float angle, breadth, length;
-        SingleLightbar() : center(Point2f(0.0f, 0.0f)), angle(0.0f), breadth(0.0f), length(0.0f) {}
+        void CalculateVertex()
+        {
+            const float theta = angle * CV_PI / 180;
+            const float a = cos(theta) * 0.5f, b = sin(theta) * 0.5f;
+            vertex[0].x = center.x - a * length - b * breadth;
+            vertex[0].y = center.y + b * length - a * breadth;
+            vertex[1].x = center.x + a * length - b * breadth;
+            vertex[1].y = center.y - b * length - a * breadth;
+            vertex[2].x = 2 * center.x - vertex[0].x;
+            vertex[2].y = 2 * center.y - vertex[0].y;
+            vertex[3].x = 2 * center.x - vertex[1].x;
+            vertex[3].y = 2 * center.y - vertex[1].y;
+        }
+        SingleLightbar() : center(Point2f(0.0f, 0.0f)), angle(0.0f), breadth(0.0f), length(0.0f) { CalculateVertex(); }
+        SingleLightbar(const Point2f &_center, const float &_angle, const float &_breadth, const float &_length) :
+            center(_center), angle(_angle), breadth(_breadth), length(_length) { CalculateVertex(); }
         SingleLightbar(const RotatedRect &rect)
         {
             center = rect.center;
@@ -38,54 +55,42 @@ namespace DetectionNG
                 length = rect.size.width;
                 angle = -rect.angle;
             }
+            CalculateVertex();
         }
-        // 1 2
-        // 0 3
-        void points(Point2f vertex[]) const
+        SingleLightbar Expand()
         {
-            const float theta = angle * CV_PI / 180;
-            const float a = cos(theta) * 0.5f, b = sin(theta) * 0.5f;
-            vertex[0].x = center.x - a * length - b * breadth;
-            vertex[0].y = center.y + b * length - a * breadth;
-            vertex[1].x = center.x + a * length - b * breadth;
-            vertex[1].y = center.y - b * length - a * breadth;
-            vertex[2].x = 2 * center.x - vertex[0].x;
-            vertex[2].y = 2 * center.y - vertex[0].y;
-            vertex[3].x = 2 * center.x - vertex[1].x;
-            vertex[3].y = 2 * center.y - vertex[1].y;
+            return SingleLightbar(center, angle, breadth * 3.0f, length * 1.5f);
         }
-        void expansion()
+        RotatedRect toRotatedRect()
         {
-            breadth *= 3.0f;
-            length *= 1.5f;
+            return RotatedRect(vertex[0], vertex[1], vertex[2]);
         }
     };
 
     struct ArmorPlate
     {
         Point2f vertex[4];
-        double confidence;
+        bool operator < (const ArmorPlate &rhs) const
+        {
+            vector<Point2f> cl(vertex, vertex+4), cr(rhs.vertex, rhs.vertex+4);
+            return contourArea(cl) > contourArea(cr);
+        }
     };
 
-    float EvaluatePixels(cv::Mat img, const cv::Mat &mask)
+    float EvaluateColor(cv::Mat roi)
     {
         int Rcount = 0, Bcount = 0;
-        for(int i = 0; i < img.rows; i++)
+        for(int i = 0; i < roi.rows; i++)
         {
-            for(int j = 0; j < img.cols; j++)
+            for(int j = 0; j < roi.cols; j++)
             {
-                Vec3b &p = img.at<Vec3b>(i, j);
-                uint8_t R = p[2], G = p[1], B = p[0];
-                float RGB = R + G + B;
-                float r = R / RGB, g = G / RGB, b = B / RGB;
-                if(b > 0.75f)
-                {
+                Vec3b &p = roi.at<Vec3b>(i, j);
+                const uint8_t &R = p[2], &G = p[1], &B = p[0];
+                const float RGB = R + G + B;
+                if(B / RGB > 0.75f)
                     ++Bcount;
-                }
-                else if(r > 0.75f)
-                {
+                else if(R / RGB > 0.75f)
                     ++Rcount;
-                }
             }
         }
         return (Rcount - Bcount) * 1.0f / (Rcount + Bcount);
@@ -128,47 +133,30 @@ namespace DetectionNG
                 float dy = right.center.y - left.center.y;
                 float slope = (abs(dx) < 2.0f ? -90.0f : atan(-dy/dx) * 180 / CV_PI);
                 if(abs(average_angle - slope - 90) > 30.0f) continue;
-                Point2f v_left[4], v_right[4];
-                left.points(v_left);
-                right.points(v_right);
-                if(min(v_left[0].y, v_left[3].y) < max(v_right[1].y, v_right[2].y)) continue;
-                if(max(v_left[1].y, v_left[2].y) > min(v_right[0].y, v_right[3].y)) continue;
+                if(min(left.vertex[0].y, left.vertex[3].y) < max(right.vertex[1].y, right.vertex[2].y)) continue;
+                if(max(left.vertex[1].y, left.vertex[2].y) > min(right.vertex[0].y, right.vertex[3].y)) continue;
                 float distance = sqrt(dx*dx + dy*dy);
                 if(distance > 4*min(left.length, right.length)) continue;
+                if(distance < min(left.length, right.length)) continue;
+                if((EvaluateColor(img(left.Expand().toRotatedRect().boundingRect() & Rect(0, 0, img.cols, img.rows))) +
+                    EvaluateColor(img(right.Expand().toRotatedRect().boundingRect() & Rect(0, 0, img.cols, img.rows))) / 2.0f) < 0.9f) continue;
                 ArmorPlate candidate;
-                candidate.vertex[0] = v_left[3];
-                candidate.vertex[1] = v_left[2];
-                candidate.vertex[2] = v_right[1];
-                candidate.vertex[3] = v_right[0];
-                SingleLightbar eleft = left, eright = right;
-                eleft.expansion(); eright.expansion();
-                Point2f veleft[4], veright[4];
-                eleft.points(veleft);
-                eright.points(veright);
-                Mat mask = Mat::zeros(img.size(), CV_8UC1);
-                vector<Point2f> contour1(veleft, veleft + 4);
-                vector<Point2f> contour2(veright, veright + 4);
-                Point velefti[4], verighti[4];
-                for(int i = 0; i < 4; i++) velefti[i] = veleft[i];
-                for(int i = 0; i < 4; i++) verighti[i] = veright[i];
-                fillConvexPoly(mask, velefti, 4, Scalar(255));
-                fillConvexPoly(mask, verighti, 4, Scalar(255));
-                candidate.confidence = EvaluatePixels(img, mask);
+                candidate.vertex[0] = left.vertex[3];
+                candidate.vertex[1] = left.vertex[2];
+                candidate.vertex[2] = right.vertex[1];
+                candidate.vertex[3] = right.vertex[0];
                 armors.push_back(candidate);
             }
         }
-        for(const ArmorPlate &armor : armors)
-        {
-            if(armor.confidence > 0.7f)
-            {
-                Mat rvec, tvec;
-                vector<Point2f> ArmorVertex3D;
-                for(int i = 0; i < 4; i++) ArmorVertex3D.push_back(armor.vertex[i]);
-                solvePnP(ArmorVertex2D, ArmorVertex3D, intrinsic, distortion, rvec, tvec);
-                target = Point3f(tvec);
-                return true;
-            }
-        }
-        return false;
+        if(armors.empty()) return false;
+        sort(armors.begin(), armors.end());
+        const ArmorPlate &armor = armors[0];
+        Mat rvec, tvec;
+        vector<Point2f> ArmorVertex3D;
+        for(int i = 0; i < 4; i++) ArmorVertex3D.push_back(armor.vertex[i]);
+        for(int i = 0; i < 4; i++) line(img, armor.vertex[i], armor.vertex[(i+1)%4], Scalar(255, 0, 0), 3);
+        solvePnP(ArmorVertex2D, ArmorVertex3D, intrinsic, distortion, rvec, tvec);
+        target = Point3f(tvec);
+        return true;
     }
 }
