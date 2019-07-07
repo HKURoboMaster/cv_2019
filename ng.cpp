@@ -100,7 +100,7 @@ namespace DetectionNG
     {
         Mat hsv(img.rows, img.cols, CV_8UC3);
         cvtColor(img, hsv, COLOR_BGR2HSV);
-        inRange(hsv, Scalar(0, 0, 250), Scalar(255, 255, 255), hsv);
+        inRange(hsv, Scalar(0, 0, 235), Scalar(255, 255, 255), hsv);
         vector<vector<Point>> contours;
         findContours(hsv, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
         vector<SingleLightbar> lights;
