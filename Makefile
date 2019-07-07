@@ -39,4 +39,4 @@ ng.cpp: ng.h
 protocol.cpp: protocol.h
 
 clean:
-	rm -rf calibration trial picker *.o
+	rm -rf calibration trial picker *.o *.dSYM
