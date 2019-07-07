@@ -124,7 +124,7 @@ void Detector()
         }
         if(detected)
         {
-            yaw = -atan2(target.x, target.z) / M_PI * 180;
+            yaw = atan2(target.x, target.z) / M_PI * 180;
             pitch = -atan2(target.y, sqrt(target.x*target.x + target.z*target.z)) / M_PI * 180;
             if(serial_comm) protocol::SendGimbalAngle(yaw, pitch);
         }
