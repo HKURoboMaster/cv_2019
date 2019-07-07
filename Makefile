@@ -12,7 +12,7 @@ endif
 all: trial calibration picker
 
 picker: picker.cpp
-	$(CXX) $(CXXFLAGS) `pkg-config --cflags --libs opencv4` picker.cpp -o picker
+	$(CXX) $(CXXFLAGS) picker.cpp -o picker `pkg-config --cflags --libs opencv4`
 
 trial: ng.o crc.o protocol.o main.o
 	$(CXX) ng.o crc.o protocol.o main.o -o trial `pkg-config --libs opencv4 eigen3` -pthread
