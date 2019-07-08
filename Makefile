@@ -15,13 +15,13 @@ picker: picker.cpp
 	$(CXX) $(CXXFLAGS) picker.cpp -o picker `pkg-config --cflags --libs opencv4`
 
 trial: ng.o crc.o protocol.o main.o
-	$(CXX) ng.o crc.o protocol.o main.o -o trial `pkg-config --libs opencv4 eigen3` -pthread
+	$(CXX) ng.o crc.o protocol.o main.o -o trial `pkg-config --libs opencv4` -pthread
 
 calibration: calibration.cpp
 	$(CXX) $(CXXFLAGS) calibration.cpp -o calibration `pkg-config --cflags --libs opencv4`
 
 ng.o: ng.cpp
-	$(CXX) $(CXXFLAGS) -c ng.cpp `pkg-config --cflags opencv4 eigen3`
+	$(CXX) $(CXXFLAGS) -c ng.cpp `pkg-config --cflags opencv4`
 
 main.o: main.cpp
 	$(CXX) $(CXXFLAGS) -c main.cpp `pkg-config --cflags opencv4`
