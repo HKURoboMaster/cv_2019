@@ -18,6 +18,7 @@
 
 #include "protocol.h"
 #include "crc.h"
+#include <cstdio>
 #include <cstring>
 #include <termios.h>
 #include <fcntl.h>
@@ -197,7 +198,7 @@ struct header
 
 #pragma pack(pop)
 
-void SendGimbalAngle(const float yaw, const float pitch)
+bool SendGimbalAngle(const float yaw, const float pitch)
 {
     static const uint8_t cmd_set_prefix[] = {CMD_SET_GIMBAL_ANGLE, GIMBAL_CMD_SET};
     static const uint32_t HEADER_LEN = sizeof(header), CMD_SET_PREFIX_LEN = 2*sizeof(uint8_t);
@@ -221,7 +222,10 @@ void SendGimbalAngle(const float yaw, const float pitch)
     memcpy(buffer + HEADER_LEN + CMD_SET_PREFIX_LEN, (uint8_t*)&gimbal_ctrl_data, DATA_LEN);
     uint32_t crc_data = CRC32Calc(buffer, pack_length - CRC_DATA_LEN);
     memcpy(buffer + pack_length - CRC_DATA_LEN, &crc_data, CRC_DATA_LEN);
-    write(serial_fd, buffer, pack_length);
+    return write(serial_fd, buffer, pack_length) == pack_length;
+    /*printf("Sending %d bytes [ ", pack_length);
+    for(int i = 0; i < pack_length; i++) printf("%02x ", buffer[i]);
+    printf("]\n");*/
 }
 
 }

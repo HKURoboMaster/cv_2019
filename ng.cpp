@@ -10,10 +10,10 @@ namespace DetectionNG
 
     void InitDetector(float intrinsic_matrix[], float distortion_coeffs[])
     {
-        ArmorVertex2D.emplace_back(cv::Point3f(-120.0f/2, 60.0f/2,  0.0));
-        ArmorVertex2D.emplace_back(cv::Point3f(-120.0f/2, -60.0f/2, 0.0));
-        ArmorVertex2D.emplace_back(cv::Point3f(120.0f/2,  -60.0f/2, 0.0));
-        ArmorVertex2D.emplace_back(cv::Point3f(120.0f/2,  60.0f/2,  0.0));
+        ArmorVertex2D.emplace_back(cv::Point3f(-120.0f/2, 200.0f+ 60.0f/2,  0.0));
+        ArmorVertex2D.emplace_back(cv::Point3f(-120.0f/2, 200.0f-60.0f/2, 0.0));
+        ArmorVertex2D.emplace_back(cv::Point3f(120.0f/2,  200.0f-60.0f/2, 0.0));
+        ArmorVertex2D.emplace_back(cv::Point3f(120.0f/2,  200.0f+60.0f/2,  0.0));
         intrinsic = Mat(3, 3, CV_32F, intrinsic_matrix);
         distortion = Mat(1, 5, CV_32F, distortion_coeffs);
     }

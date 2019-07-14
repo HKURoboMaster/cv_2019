@@ -125,12 +125,24 @@ void Detector()
         if(detected)
         {
             yaw = atan2(target.x, target.z) / M_PI * 180;
-            pitch = -atan2(target.y, sqrt(target.x*target.x + target.z*target.z)) / M_PI * 180;
-            if(serial_comm) protocol::SendGimbalAngle(yaw, pitch);
+            pitch = atan2(target.y, sqrt(target.x*target.x + target.z*target.z)) / M_PI * 180;
+            if(serial_comm)
+            {
+                if(!protocol::SendGimbalAngle(yaw, pitch))
+                {
+                    running = false;
+                }
+            }
         }
         else
         {
-            if(serial_comm) protocol::SendGimbalAngle(yaw, pitch);
+            if(serial_comm)
+            {
+                if(!protocol::SendGimbalAngle(0, 0))
+                {
+                    running = false;
+                }
+            }
         }
         mtx_output.unlock();
         if(verbose > 0)
