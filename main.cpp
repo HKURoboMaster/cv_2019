@@ -201,7 +201,7 @@ void Detector()
 int main(int argc, char *argv[])
 {
     INPUT_TYPE input_type = CAMERA;
-    string serial_device("/dev/ttyUSB0");
+    string serial_device("/dev/serial_sdk");
     serial_comm = true;
     int camera_id = 0, custom_width = 640, custom_height = 480;
     string video_file, record_file;
