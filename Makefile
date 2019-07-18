@@ -6,8 +6,8 @@ ifeq ($(OPTIMIZE), 1)
     CFLAGS += -O2
     CXXFLAGS += -O2
 else
-    CFLAGS += -g -O0
-    CXXFLAGS += -g -O0
+    CFLAGS += -g -Og
+    CXXFLAGS += -g -Og
 endif
 
 .PHONY: clean all
