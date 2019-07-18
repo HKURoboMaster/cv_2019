@@ -99,7 +99,9 @@ void VideoReader()
 void Detector()
 {
     bool detected;
+    float last_yaw = 0.0f, last_pitch = 0.0f;
     float yaw, pitch;
+    float future_yaw, future_pitch;
     char buf[100];
     Point3f target;
     while(running)
@@ -126,9 +128,13 @@ void Detector()
         {
             yaw = atan2(target.x, target.z) / M_PI * 180;
             pitch = atan2(target.y, sqrt(target.x*target.x + target.z*target.z)) / M_PI * 180;
+            future_yaw = (yaw - last_yaw) * 0.5f + yaw;
+            future_pitch = (pitch - last_pitch) * 0.5f + pitch;
+            last_yaw = yaw;
+            last_pitch = pitch;
             if(serial_comm)
             {
-                if(!protocol::SendGimbalAngle(yaw, pitch))
+                if(!protocol::SendGimbalAngle(future_yaw, future_pitch))
                 {
                     running = false;
                 }
