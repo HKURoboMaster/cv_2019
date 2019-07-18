@@ -165,8 +165,8 @@ struct gimbal_ctrl
             uint8_t pitch_mode: 1;
         } bit;
     } ctrl;
-    int16_t pitch;
-    int16_t yaw;
+    float pitch;
+    float yaw;
 };
 
 struct header
