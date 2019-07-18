@@ -1,3 +1,6 @@
+ifeq ($(shell pkg-config --cflags --libs opencv4 2>/dev/null),)
+    $(error Unable to locate OpenCV 4)
+endif
 CXXFLAGS += -std=c++11
 ifneq ($(shell which nvcc 2>/dev/null),)
     CXXFLAGS += -DCUDA
