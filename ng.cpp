@@ -83,6 +83,23 @@ namespace DetectionNG
         }
     };
 
+    Mat Mask(Size size, Point2f p1, Point2f p2, Point2f p3, Point2f p4)
+    {
+        Mat mask = Mat::zeros(size, CV_8UC1);
+        Point pts[4];
+        pts[0].x = p1.x; pts[0].y = p1.y;
+        pts[1].x = p2.x; pts[1].y = p2.y;
+        pts[2].x = p3.x; pts[2].y = p3.y;
+        pts[3].x = p4.x; pts[3].y = p4.y;
+        fillConvexPoly(mask, pts, 4, Scalar(255), 8, 0);
+        return mask;
+    }
+
+    Mat Mask(Size size, Point2f vertex[4])
+    {
+        return Mask(size, vertex[0], vertex[1], vertex[2], vertex[3]);
+    }
+
     float EvaluateColor(cv::Mat roi)
     {
         int Rcount = 0, Bcount = 0;
@@ -156,6 +173,14 @@ namespace DetectionNG
                 float distance = sqrt(dx*dx + dy*dy);
                 if(distance > 4*min(left.length, right.length)) continue;
                 if(distance < min(left.length, right.length)) continue;
+
+                Mat mask, mat_mean, mat_stddev;
+                mask = Mask(gray.size(), left.vertex[3], left.vertex[2], right.vertex[1], right.vertex[0]);
+                meanStdDev(gray, mat_mean, mat_stddev, mask);
+                if(mat_mean.at<double>(0, 0) > 90.0 || mat_stddev.at<double>(0, 0) > 90.0) continue;
+                meanStdDev(img, mat_mean, mat_stddev, Mask(img.size(), left.vertex));
+                if(mat_mean.at<double>(0, 0) > mat_mean.at<double>(0, 2)) continue;
+
                 if((EvaluateColor(img(left.Expand().toRotatedRect().boundingRect() & Rect(0, 0, img.cols, img.rows))) +
                     EvaluateColor(img(right.Expand().toRotatedRect().boundingRect() & Rect(0, 0, img.cols, img.rows))) / 2.0f) < 0.9f) continue;
                 ArmorPlate candidate;
