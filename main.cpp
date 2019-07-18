@@ -31,7 +31,7 @@
 using namespace std;
 using namespace cv;
 int verbose = 0;
-bool serial_comm, recording, single_step;
+bool serial_comm, recording, single_step, show_fps;
 atomic<bool> running;
 atomic<bool> new_image;
 mutex mtx_input, mtx_output;
@@ -104,6 +104,8 @@ void Detector()
     float future_yaw, future_pitch;
     char buf[100];
     Point3f target;
+    int frame_count = 0;
+    chrono::high_resolution_clock::time_point last = chrono::high_resolution_clock::now();
     while(running)
     {
         mtx_input.lock();
@@ -124,6 +126,13 @@ void Detector()
             mtx_output.unlock();
             break;
         }
+        if(chrono::duration_cast<chrono::duration<double>>(chrono::high_resolution_clock::now() - last).count() > 1.0)
+        {
+            if(show_fps) cout << frame_count << endl;
+            frame_count = 0;
+            last = chrono::high_resolution_clock::now();
+        }
+        frame_count++;
         if(detected)
         {
             yaw = atan2(target.x, target.z) / M_PI * 180;
@@ -241,6 +250,10 @@ int main(int argc, char *argv[])
             else if(strcmp(argv[i], "--single-step") == 0)
             {
                 single_step = true;
+            }
+            else if(strcmp(argv[i], "--show-fps") == 0)
+            {
+                show_fps = true;
             }
             else
             {

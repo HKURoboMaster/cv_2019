@@ -38,5 +38,9 @@ Record a video
 
 Pause at every frame
 
+- `--show-fps`
+
+Output FPS in standard output every second
+
 ## License
 This is a free software distributed under GNU GPLv3.
