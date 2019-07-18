@@ -1,5 +1,11 @@
 #include <vector>
 #include "ng.h"
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#ifdef CUDA
+#include <opencv2/core/cuda.hpp>
+#include <opencv2/cudaimgproc.hpp>
+#endif
 using namespace std;
 using namespace cv;
 
@@ -98,8 +104,20 @@ namespace DetectionNG
 
     bool DetectArmor(Mat &img, Point3f &target)
     {
+#ifdef CUDA
+        Mat hsv, gray;
+        cuda::GpuMat img_gpu, hsv_gpu, gray_gpu;
+        img_gpu.upload(img);
+        cuda::cvtColor(img_gpu, hsv_gpu, COLOR_BGR2HSV);
+        cuda::cvtColor(img_gpu, gray_gpu, COLOR_BGR2GRAY);
+        hsv_gpu.download(hsv);
+        gray_gpu.download(gray);
+#else
         Mat hsv(img.rows, img.cols, CV_8UC3);
+        Mat gray(img.rows, img.cols, CV_8UC1);
         cvtColor(img, hsv, COLOR_BGR2HSV);
+        cvtColor(img, gray, COLOR_BGR2GRAY);
+#endif
         inRange(hsv, Scalar(0, 0, 235), Scalar(255, 255, 255), hsv);
         vector<vector<Point>> contours;
         findContours(hsv, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);

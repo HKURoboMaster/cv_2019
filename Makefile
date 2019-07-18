@@ -1,4 +1,7 @@
 CXXFLAGS += -std=c++11
+ifneq ($(shell which nvcc 2>/dev/null),)
+    CXXFLAGS += -DCUDA
+endif
 ifeq ($(OPTIMIZE), 1)
     CFLAGS += -O2
     CXXFLAGS += -O2
