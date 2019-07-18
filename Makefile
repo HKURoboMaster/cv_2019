@@ -12,25 +12,26 @@ else
     CFLAGS += -g -Og
     CXXFLAGS += -g -Og
 endif
-
+CXXFLAGS += $(shell pkg-config --cflags opencv4)
+LDFLAGS += $(shell pkg-config --libs opencv4)
 .PHONY: clean all
 
 all: trial calibration picker
 
 picker: picker.cpp
-	$(CXX) $(CXXFLAGS) picker.cpp -o picker `pkg-config --cflags --libs opencv4`
+	$(CXX) $(CXXFLAGS) picker.cpp -o picker $(LDFLAGS)
 
 trial: ng.o crc.o protocol.o main.o
-	$(CXX) ng.o crc.o protocol.o main.o -o trial `pkg-config --libs opencv4` -pthread
+	$(CXX) ng.o crc.o protocol.o main.o -o trial -pthread $(LDFLAGS)
 
 calibration: calibration.cpp
-	$(CXX) $(CXXFLAGS) calibration.cpp -o calibration `pkg-config --cflags --libs opencv4`
+	$(CXX) $(CXXFLAGS) calibration.cpp -o calibration $(LDFLAGS)
 
 ng.o: ng.cpp
-	$(CXX) $(CXXFLAGS) -c ng.cpp `pkg-config --cflags opencv4`
+	$(CXX) $(CXXFLAGS) -c ng.cpp
 
 main.o: main.cpp
-	$(CXX) $(CXXFLAGS) -c main.cpp `pkg-config --cflags opencv4`
+	$(CXX) $(CXXFLAGS) -c main.cpp
 
 protocol.o: protocol.cpp
 	$(CXX) $(CXXFLAGS) -c protocol.cpp
